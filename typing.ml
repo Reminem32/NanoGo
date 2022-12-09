@@ -174,12 +174,29 @@ and expr_desc env loc = function
       let toto, titi = aux el in
       let titi = unfold_typList titi in
       (TEprint toto, tvoid, false)
-  | PEcall ({ id = "new" }, [ { pexpr_desc = PEident { id;loc } } ]) ->
-      let ty = type_type (PTident { id;loc })
-      in
+  | PEcall ({ id = "new" }, [ { pexpr_desc = PEident { id; loc } } ]) ->
+      let ty = type_type (PTident { id; loc }) in
       (TEnew ty, Tptr ty, false)
   | PEcall ({ id = "new" }, _) -> error loc "new expects a type"
-  | PEcall (id, el) -> (* TODO *) assert false
+  | PEcall (id, el) -> (
+      (* TODONE *)
+      let rec aux l =
+        match l with
+        | [] -> ([], [])
+        | p :: q ->
+            let a1, b1 = expr env p in
+            let toto, titi = aux q in
+            (a1 :: toto, a1.expr_typ :: titi)
+      in
+      try
+        let azerbaijdan = Hashtbl.find fonction_env id.id in
+        let toto, titi = aux el in
+        let titi = unfold_typList titi in
+        (TEcall (azerbaijdan, toto), Tmany titi, false)
+      with Not_found ->
+        error id.loc
+          "La fonction que tu cherche à appeler... je crains qu'elle ne soit \
+           pas de ce monde... tout comme moi bientôt...")
   | PEfor (e, b) ->
       (* TODONE *)
       let a1, b1 = expr env e in
@@ -205,10 +222,40 @@ and expr_desc env loc = function
       with Not_found -> error loc "Ta variable est introuvable !")
   | PEdot (e, id) -> (* TODO *) assert false
   | PEassign (lvl, el) -> (* TODO *) (TEassign ([], []), tvoid, false)
-  | PEreturn el -> (* TODO *) (TEreturn [], tvoid, true)
-  | PEblock el -> (* TODO *) (TEblock [], tvoid, false)
-  | PEincdec (e, op) -> (* TODO *) assert false
-  | PEvars _ -> error loc "Unexpected déclaration de var !"
+  | PEreturn el ->
+      (* TODONE +/- *)
+      let toto = ref [] in
+      let rec aux l =
+        match l with
+        | [] -> ()
+        | p :: q ->
+            let a1, b1 = expr env p in
+            toto := !toto @ [ a1 ]
+      in
+      aux el;
+      (*Il faudrait vérifier que le type de return est le bon !*)
+      (TEreturn !toto, tvoid, true)
+  | PEblock el ->
+      (* TODO..... *)
+      let toto = ref [] in
+      let titi = ref false in
+      let rec aux l =
+        match l with
+        | [] -> ()
+        | p :: q ->
+            let a1, b1 = expr env p in
+            toto := !toto @ [ a1 ]
+      in
+      aux el;
+
+      (TEblock !toto, tvoid, !titi)
+  | PEincdec (e, op) ->
+      (* TODONE *)
+      let a, b, c = expr_desc env loc e.pexpr_desc in
+      if b = Tint then
+        (TEincdec ({ expr_desc = a; expr_typ = b }, op), Tint, false)
+      else error loc "Tu inconnes ou deconnes sur un non int !"
+  | PEvars _ -> (*TODO*) error loc "Unexpected déclaration de var !"
 
 let found_main = ref false
 
