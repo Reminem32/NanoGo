@@ -255,7 +255,7 @@ and expr_desc env loc = function
       if b = Tint then
         (TEincdec ({ expr_desc = a; expr_typ = b }, op), Tint, false)
       else error loc "Tu inconnes ou deconnes sur un non int !"
-  | PEvars _ -> (*TODO*) error loc "Unexpected déclaration de var !"
+  | PEvars _ -> (*TODO*) TEvars([],[]), tvoid, false
 
 let found_main = ref false
 
